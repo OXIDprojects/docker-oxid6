@@ -1,0 +1,53 @@
+version: '2'
+services:
+  webserver:
+    build: ./docker/conf
+    environment:
+      XDEBUG_CONFIG: "remote_host={$YOUR_HOST_IP}"
+    ports:
+      - 80:80
+    links:
+      - mysql
+    volumes:
+      - ./docker/conf/php.ini:/usr/local/etc/php/php.ini
+      - ./docker/conf/000-default.conf:/etc/apache2/sites-available/000-default.conf
+      - ./docker/conf/modules/:/usr/local/etc/php/modules/
+      - ./log/s:/var/log/
+    volumes_from:
+      - app
+
+  composer:
+    image: composer/composer
+    volumes_from:
+      - webserver
+    working_dir: /var/www/html
+
+  mysql:
+    image: mysql:5.7
+    volumes_from:
+      - data
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: oxid
+      MYSQL_USER: oxid
+      MYSQL_PASSWORD: oxid
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - 8080:80
+    links:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+
+  # FS volumes_from
+  app:
+    image: tianon/true
+    volumes:
+      - ./src/oxid/:/var/www/html
+
+  data:
+    image: tianon/true
+    volumes:
+      - /var/lib/mysql
